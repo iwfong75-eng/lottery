@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<link rel="manifest" href="manifest.json">
+<title>澳門連環消費大獎賞記錄簿</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC",sans-serif}
+body{padding:12px;background:#f4f4f4;font-size:14px}
+.wrap{max-width:900px;margin:0 auto}
+
+.title-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:8px}
+.title{font-size:20px;font-weight:bold}
+button{padding:8px 12px;border:none;border-radius:6px;background:#2563eb;color:#fff}
+button.danger{background:#dc2626}
+
+.header-row,.bank-row{display:flex;gap:4px;align-items:center;margin:4px 0}
+.header-row{font-weight:bold;padding:8px 0}
+.bank-row{background:#fff;padding:8px;border-radius:8px;min-height:72px}
+
+.col-bank{width:14%}
+.col-prize{width:18%;display:flex;flex-direction:column;gap:4px}
+.col-sum{width:22%;text-align:center}
+
+select{width:100%;padding:6px;border:1px solid #ccc;border-radius:4px}
+input[type="checkbox"]{transform:scale(1.2)}
+.total-box{margin-top:12px;padding:12px;background:#fff;border-radius:8px;font-size:17px;font-weight:bold;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="title-bar">
+    <div class="title">澳門連環消費大獎賞記錄簿</div>
+    <button class="danger" onclick="resetAll()">重置全部</button>
+  </div>
+
+  <div class="header-row">
+    <div class="col-bank">銀行</div>
+    <div class="col-prize">抽獎1<br>(勾選=已用)</div>
+    <div class="col-prize">抽獎2<br>(勾選=已用)</div>
+    <div class="col-prize">抽獎3<br>(勾選=已用)</div>
+    <div class="col-sum">本行所需金額</div>
+  </div>
+
+  <div id="container"></div>
+
+  <div class="total-box" id="totalText">【全部銀行合計：0 元】</div>
+</div>
+
+<script>
+const prize_map = {
+  "10元": {"per": 10, "count": 3},
+  "20元": {"per": 20, "count": 3},
+  "50元": {"per": 50, "count": 3},
+  "100元": {"per": 100, "count": 3},
+  "200元": {"per": 200, "count": 3},
+  "100-12": {"per": 100, "count": 1},
+};
+const amount_options = Object.keys(prize_map);
+const spinner_values = ["未選擇", ...amount_options];
+
+const bank_list = [
+  "中國銀行", "大豐銀行", "支付寶", "廣發銀行",
+  "國際銀行", "工商銀行", "M pay", "Ue pay",
+];
+
+let saveTimer = null;
+const SAVE_DELAY = 400; // ms
+
+// 計算單項金額
+function calcPrizeValue(text, checked) {
+  if(text === "未選擇" || checked) return 0;
+  const it = prize_map[text];
+  return it ? it.per * it.count : 0;
+}
+
+// 儲存讀取
+function getKey(){ return "lottery_bank_record"; }
+function loadData(){
+  const raw = localStorage.getItem(getKey());
+  if(!raw) return null;
+  try{ return JSON.parse(raw); }catch(e){return null;}
+}
+function saveData(){
+  const data = collectAll();
+  localStorage.setItem(getKey(), JSON.stringify(data));
+}
+function scheduleSave(){
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveData, SAVE_DELAY);
+}
+
+// 收集所有行數據
+function collectAll(){
+  const rows = document.querySelectorAll(".bank-row");
+  const out = [];
+  rows.forEach(row=>{
+    const bankName = row.dataset.bank;
+    const items = row.querySelectorAll(".col-prize");
+    const prizes = [];
+    items.forEach(box=>{
+      const sel = box.querySelector("select");
+      const chk = box.querySelector("input[type=checkbox]");
+      prizes.push({spinner:sel.value, checked:chk.checked});
+    })
+    out.push({bank:bankName, prizes});
+  })
+  return out;
+}
+
+// 計算一行銀行小計
+function calcRow(rowEl){
+  let sum = 0;
+  const items = rowEl.querySelectorAll(".col-prize");
+  items.forEach(box=>{
+    const sel = box.querySelector("select");
+    const chk = box.querySelector("input[type=checkbox]");
+    sum += calcPrizeValue(sel.value, chk.checked);
+  })
+  rowEl.querySelector(".col-sum").innerText = `本行：${sum} 元`;
+  return sum;
+}
+
+// 更新總計
+function updateTotal(){
+  let total = 0;
+  document.querySelectorAll(".bank-row").forEach(r=>{
+    total += calcRow(r);
+  })
+  document.getElementById("totalText").innerText = `【全部銀行合計：${total} 元】`;
+}
+
+// 建立一行銀行UI
+function makeBankRow(bankName, prizeData = null){
+  const row = document.createElement("div");
+  row.className = "bank-row";
+  row.dataset.bank = bankName;
+
+  const colBank = document.createElement("div");
+  colBank.className = "col-bank";
+  colBank.innerText = bankName;
+  row.appendChild(colBank);
+
+  for(let i=0;i<3;i++){
+    const colPrize = document.createElement("div");
+    colPrize.className = "col-prize";
+
+    const sel = document.createElement("select");
+    spinner_values.forEach(v=>{
+      const opt = document.createElement("option");
+      opt.value = v; opt.innerText = v;
+      sel.appendChild(opt);
+    })
+    const chk = document.createElement("input");
+    chk.type = "checkbox";
+
+    // 綁定改變事件
+    function onChange(){
+      updateTotal();
+      scheduleSave();
+    }
+    sel.onchange = onChange;
+    chk.onchange = onChange;
+
+    colPrize.appendChild(sel);
+    colPrize.appendChild(chk);
+    row.appendChild(colPrize);
+
+    // 載入舊數據
+    if(prizeData && prizeData[i]){
+      sel.value = prizeData[i].spinner ?? "未選擇";
+      chk.checked = !!prizeData[i].checked;
+    }
+  }
+
+  const colSum = document.createElement("div");
+  colSum.className = "col-sum";
+  colSum.innerText = "本行：0 元";
+  row.appendChild(colSum);
+  return row;
+}
+
+// 渲染全部
+function render(){
+  const container = document.getElementById("container");
+  container.innerHTML = "";
+  const saved = loadData();
+  bank_list.forEach((bank, idx)=>{
+    const rowData = saved ? saved.find(x=>x.bank === bank) : null;
+    const r = makeBankRow(bank, rowData?.prizes);
+    container.appendChild(r);
+  })
+  updateTotal();
+}
+
+// 重置全部
+function resetAll(){
+  bank_list.forEach(bank=>{
+    const row = document.querySelector(`.bank-row[data-bank="${bank}"]`);
+    if(!row) return;
+    row.querySelectorAll("select").forEach(s=>s.value="未選擇");
+    row.querySelectorAll("input[type=checkbox]").forEach(c=>c.checked=false);
+  })
+  clearTimeout(saveTimer);
+  saveData();
+  updateTotal();
+}
+
+render();
+</script>
+</body>
+</html>
