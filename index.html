@@ -20,7 +20,7 @@ button.danger{background:#dc2626}
 .bank-row{background:#fff;padding:8px;border-radius:8px;min-height:72px}
 
 .col-bank{width:20%}
-.col-prize{width:17%;display:flex;flex-direction:column;gap:4px}
+.col-prize{width:20%;display:flex;flex-direction:column;gap:4px}
 .col-sum{width:20%;text-align:center;color:#000;}
 .sum-red{color:#dc2626;font-weight:bold;}
 
@@ -32,7 +32,7 @@ input[type="checkbox"]{transform:scale(1.2)}
 <body>
 <div class="wrap">
   <div class="title-bar">
-    <div class="title">澳門連環消費大獎賞記錄簿</div>
+    <div class="title">澳門連環消費大獎賞記錄</div>
     <button class="danger" onclick="resetAll()">重置全部</button>
   </div>
 
@@ -41,7 +41,7 @@ input[type="checkbox"]{transform:scale(1.2)}
     <div class="col-prize">抽獎1<br>(勾選=已用)</div>
     <div class="col-prize">抽獎2<br>(勾選=已用)</div>
     <div class="col-prize">抽獎3<br>(勾選=已用)</div>
-    <div class="col-sum">所需金額</div>
+    <div class="col-sum">金額</div>
   </div>
 
   <div id="container"></div>
@@ -59,7 +59,7 @@ const prize_map = {
   "100-12": {"per": 100, "count": 1},
 };
 const amount_options = Object.keys(prize_map);
-const spinner_values = ["未選擇", ...amount_options];
+const spinner_values = ["選擇", ...amount_options];
 
 const bank_list = [
   "中國銀行", "大豐銀行", "支付寶", "廣發銀行",
@@ -120,7 +120,7 @@ function calcRow(rowEl){
     sum += calcPrizeValue(sel.value, chk.checked);
   })
   const sumEl = rowEl.querySelector(".col-sum");
-  sumEl.innerText = `本行：${sum} 元`;
+  sumEl.innerText = `小計${sum} 元`;
   if(sum > 0){
     sumEl.classList.add("sum-red");
   }else{
@@ -135,7 +135,7 @@ function updateTotal(){
   document.querySelectorAll(".bank-row").forEach(r=>{
     total += calcRow(r);
   })
-  document.getElementById("totalText").innerText = `【全部銀行合計：${total} 元】`;
+  document.getElementById("totalText").innerText = `【全部合計：${total} 元】`;
 }
 
 // 建立一行銀行UI
@@ -183,7 +183,7 @@ function makeBankRow(bankName, prizeData = null){
 
   const colSum = document.createElement("div");
   colSum.className = "col-sum";
-  colSum.innerText = "本行：0 元";
+  colSum.innerText = "小計 0 元";
   row.appendChild(colSum);
   return row;
 }
