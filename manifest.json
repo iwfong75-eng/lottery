@@ -1,6 +1,6 @@
 {
   "name": "澳門連環消費大獎賞記錄簿",
-  "short_name": "消費記錄簿",
+  "short_name": "獎賞記錄",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#f4f4f4",
