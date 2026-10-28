@@ -21,7 +21,8 @@ button.danger{background:#dc2626}
 
 .col-bank{width:14%}
 .col-prize{width:18%;display:flex;flex-direction:column;gap:4px}
-.col-sum{width:22%;text-align:center}
+.col-sum{width:22%;text-align:center;color:#000;}
+.sum-red{color:#dc2626;font-weight:bold;}
 
 select{width:100%;padding:6px;border:1px solid #ccc;border-radius:4px}
 input[type="checkbox"]{transform:scale(1.2)}
@@ -118,7 +119,13 @@ function calcRow(rowEl){
     const chk = box.querySelector("input[type=checkbox]");
     sum += calcPrizeValue(sel.value, chk.checked);
   })
-  rowEl.querySelector(".col-sum").innerText = `本行：${sum} 元`;
+  const sumEl = rowEl.querySelector(".col-sum");
+  sumEl.innerText = `本行：${sum} 元`;
+  if(sum > 0){
+    sumEl.classList.add("sum-red");
+  }else{
+    sumEl.classList.remove("sum-red");
+  }
   return sum;
 }
 
