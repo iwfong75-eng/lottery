@@ -24,7 +24,8 @@ button.danger{background:#dc2626}
 .col-sum{width:20%;text-align:center;color:#000;}
 .sum-red{color:#16a34a;font-weight:bold;}
 
-select{width:100%;padding:6px;border:1px solid #ccc;border-radius:4px}
+select{width:100%;padding:6px;border:1px solid #ccc;border-radius:4px;color:#000;}
+select.item-selected-red{color:#dc2626;font-weight:bold;}
 input[type="checkbox"]{transform:scale(1.2)}
 .total-box{margin-top:12px;padding:12px;background:#fff;border-radius:8px;font-size:17px;font-weight:bold;text-align:center}
 </style>
@@ -71,7 +72,7 @@ const SAVE_DELAY = 400; // ms
 
 // 計算單項金額
 function calcPrizeValue(text, checked) {
-  if(text === "未選擇" || checked) return 0;
+  if(text === "選擇" || checked) return 0;
   const it = prize_map[text];
   return it ? it.per * it.count : 0;
 }
@@ -138,6 +139,15 @@ function updateTotal(){
   document.getElementById("totalText").innerText = `【全部合計：${total} 元】`;
 }
 
+// 設定下拉嘅顏色
+function setSelectColor(sel){
+  if(sel.value !== "選擇"){
+    sel.classList.add("item-selected-red");
+  }else{
+    sel.classList.remove("item-selected-red");
+  }
+}
+
 // 建立一行銀行UI
 function makeBankRow(bankName, prizeData = null){
   const row = document.createElement("div");
@@ -164,6 +174,7 @@ function makeBankRow(bankName, prizeData = null){
 
     // 綁定改變事件
     function onChange(){
+      setSelectColor(sel);
       updateTotal();
       scheduleSave();
     }
@@ -174,10 +185,11 @@ function makeBankRow(bankName, prizeData = null){
     colPrize.appendChild(chk);
     row.appendChild(colPrize);
 
-    // 載入舊數據
+    // 載入舊數據 + 同步設定顏色
     if(prizeData && prizeData[i]){
-      sel.value = prizeData[i].spinner ?? "未選擇";
+      sel.value = prizeData[i].spinner ?? "選擇";
       chk.checked = !!prizeData[i].checked;
+      setSelectColor(sel);
     }
   }
 
@@ -206,7 +218,10 @@ function resetAll(){
   bank_list.forEach(bank=>{
     const row = document.querySelector(`.bank-row[data-bank="${bank}"]`);
     if(!row) return;
-    row.querySelectorAll("select").forEach(s=>s.value="未選擇");
+    row.querySelectorAll("select").forEach(s=>{
+      s.value="選擇";
+      s.classList.remove("item-selected-red");
+    });
     row.querySelectorAll("input[type=checkbox]").forEach(c=>c.checked=false);
   })
   clearTimeout(saveTimer);
